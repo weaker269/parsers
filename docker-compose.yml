@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  # Parser gRPC 服务（可通过 --scale 扩展多副本）
+  parser-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "50051:50051"
+    environment:
+      # OCR 配置
+      - PADDLEOCR_SHOW_LOG=${PADDLEOCR_SHOW_LOG:-False}
+      - OCR_LANGUAGE=${OCR_LANGUAGE:-ch}
+      - OCR_MAX_IMAGE_SIZE=${OCR_MAX_IMAGE_SIZE:-4096}
+
+      # 并发配置
+      - PAGE_POOL_MAX_WORKERS=${PAGE_POOL_MAX_WORKERS:-4}
+      - OCR_POOL_MAX_WORKERS=${OCR_POOL_MAX_WORKERS:-4}
+      - OCR_TIMEOUT=${OCR_TIMEOUT:-300}
+
+      # gRPC 配置
+      - GRPC_PORT=${GRPC_PORT:-50051}
+      - GRPC_MAX_WORKERS=${GRPC_MAX_WORKERS:-10}
+      - GRPC_MAX_MESSAGE_LENGTH=${GRPC_MAX_MESSAGE_LENGTH:-52428800}
+
+      # 日志配置
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FILE=${LOG_FILE:-logs/parser_service.log}
+
+      # VLM Caption 配置（阶段 4 - 可选）
+      - CAPTION_ENABLED=${CAPTION_ENABLED:-false}
+      - CAPTION_BACKEND=${CAPTION_BACKEND:-ollama}
+      - OLLAMA_API_BASE=${OLLAMA_API_BASE:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llava:13b}
+      - CAPTION_TIMEOUT=${CAPTION_TIMEOUT:-30}
+      - CAPTION_MAX_CONCURRENT=${CAPTION_MAX_CONCURRENT:-10}
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G            # 内存限制
+          cpus: '2'             # CPU 限制
+        reservations:
+          memory: 512M          # 内存预留
+          cpus: '1'             # CPU 预留
+
+    healthcheck:
+      test: ["/bin/bash", "./scripts/grpc_health_check.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s       # OCR 模型加载需要时间
+
+    restart: unless-stopped
+
+    networks:
+      - parser-net
+
+    volumes:
+      # 挂载日志目录（可选，用于持久化日志）
+      - ./logs:/app/logs
+
+networks:
+  parser-net:
+    driver: bridge
+
+# ===========================
+# 使用说明
+# ===========================
+#
+# 1. 单副本启动：
+#    docker-compose up -d
+#
+# 2. 多副本启动（负载均衡）：
+#    docker-compose up -d --scale parser-service=3
+#
+# 3. 查看服务状态：
+#    docker-compose ps
+#
+# 4. 查看日志：
+#    docker-compose logs -f parser-service
+#
+# 5. 健康检查：
+#    docker exec <container_id> ./scripts/grpc_health_check.sh
+#
+# 6. 停止服务：
+#    docker-compose down
+#
+# 7. 重新构建并启动：
+#    docker-compose up -d --build
+#
+# ===========================
+# 环境变量配置
+# ===========================
+#
+# 在项目根目录创建 .env 文件，配置以下变量：
+#
+# # OCR 配置
+# PADDLEOCR_SHOW_LOG=False
+# OCR_LANGUAGE=ch
+# OCR_MAX_IMAGE_SIZE=4096
+#
+# # 并发配置
+# PAGE_POOL_MAX_WORKERS=4
+# OCR_POOL_MAX_WORKERS=4
+# OCR_TIMEOUT=300
+#
+# # gRPC 配置
+# GRPC_PORT=50051
+# GRPC_MAX_WORKERS=10
+# GRPC_MAX_MESSAGE_LENGTH=52428800
+#
+# # 日志配置
+# LOG_LEVEL=INFO
+# LOG_FILE=logs/parser_service.log
+#
+# # VLM Caption 配置（阶段 4 - 可选）
+# CAPTION_ENABLED=false
+# CAPTION_BACKEND=ollama
+# OLLAMA_API_BASE=http://host.docker.internal:11434
+# OLLAMA_MODEL=llava:13b
+# CAPTION_TIMEOUT=30
+# CAPTION_MAX_CONCURRENT=10
