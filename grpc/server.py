@@ -19,10 +19,20 @@ import time
 import signal
 import uuid
 import os
+import asyncio
 from pathlib import Path
 from typing import Optional
 
-from parsers.grpc.generated import parser_pb2, parser_pb2_grpc
+import sys
+from pathlib import Path
+
+# 添加项目根目录和 grpc 目录到 Python 路径
+project_root = Path(__file__).parent.parent
+grpc_dir = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(grpc_dir))
+
+from generated import parser_pb2, parser_pb2_grpc
 from parsers import create_parser
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
@@ -46,29 +56,31 @@ class ParserServiceServicer(parser_pb2_grpc.ParserServiceServicer):
         request_id = str(uuid.uuid4())
         start_time = time.time()
 
-        logger.info(f"[{request_id}] 收到解析请求: {request.file_path}")
+        logger.info(f"[{request_id}] 收到解析请求: {request.file_name}")
 
         try:
             # 1. 参数验证
-            if not request.file_path:
+            if not request.file_content:
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                context.set_details("file_path 不能为空")
-                logger.error(f"[{request_id}] 参数验证失败: file_path 为空")
+                context.set_details("file_content 不能为空")
+                logger.error(f"[{request_id}] 参数验证失败: file_content 为空")
                 return parser_pb2.ParseResponse()
 
-            file_path = Path(request.file_path)
-            if not file_path.exists():
-                context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details(f"文件不存在: {file_path}")
-                logger.error(f"[{request_id}] 文件不存在: {file_path}")
+            if not request.file_name:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("file_name 不能为空")
+                logger.error(f"[{request_id}] 参数验证失败: file_name 为空")
                 return parser_pb2.ParseResponse()
 
-            # 2. 检测文件格式
-            file_format = request.file_format or file_path.suffix
-            if not file_format.startswith('.'):
-                file_format = f'.{file_format}'
+            # 2. 从文件名检测文件格式
+            file_format = Path(request.file_name).suffix
+            if not file_format:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(f"无法从文件名 {request.file_name} 中识别格式")
+                logger.error(f"[{request_id}] 文件格式识别失败: {request.file_name}")
+                return parser_pb2.ParseResponse()
 
-            logger.info(f"[{request_id}] 文件格式: {file_format}")
+            logger.info(f"[{request_id}] 文件: {request.file_name}, 格式: {file_format}, 大小: {len(request.file_content)} bytes")
 
             # 3. 创建解析器
             try:
@@ -84,10 +96,11 @@ class ParserServiceServicer(parser_pb2_grpc.ParserServiceServicer):
             # 当前版本：使用默认配置
 
             # 5. 执行解析
-            logger.info(f"[{request_id}] 开始解析文件: {file_path}")
+            logger.info(f"[{request_id}] 开始解析文件: {request.file_name}")
             parse_start = time.time()
 
-            content = parser.parse(str(file_path))
+            # 调用异步 parse 方法
+            content = asyncio.run(parser.parse(request.file_content))
 
             parse_duration = time.time() - parse_start
             logger.info(f"[{request_id}] 解析完成，耗时 {parse_duration*1000:.2f}ms")
@@ -105,7 +118,7 @@ class ParserServiceServicer(parser_pb2_grpc.ParserServiceServicer):
             )
 
             logger.info(
-                f"[{request_id}] 解析完成: {file_path}, "
+                f"[{request_id}] 解析完成: {request.file_name}, "
                 f"耗时 {total_duration:.2f}ms, "
                 f"页数 {metadata.page_count}, "
                 f"图像 {metadata.image_count}, "
@@ -119,7 +132,7 @@ class ParserServiceServicer(parser_pb2_grpc.ParserServiceServicer):
             )
 
         except Exception as e:
-            logger.error(f"[{request_id}] 解析失败: {file_path}", exc_info=True)
+            logger.error(f"[{request_id}] 解析失败: {request.file_name}", exc_info=True)
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return parser_pb2.ParseResponse(

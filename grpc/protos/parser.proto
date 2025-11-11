@@ -13,8 +13,8 @@ service ParserService {
 
 // 解析请求消息
 message ParseRequest {
-  string file_path = 1;              // 文件路径
-  string file_format = 2;            // 文件格式（pdf/docx/pptx/md）
+  bytes file_content = 1;            // 文件二进制内容
+  string file_name = 2;              // 文件名（用于格式检测，如 "report.pdf"）
 
   // 解析选项
   ParseOptions options = 3;

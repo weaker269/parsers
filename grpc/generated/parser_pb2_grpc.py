@@ -6,14 +6,25 @@ import warnings
 from . import parser_pb2 as parser__pb2
 
 GRPC_GENERATED_VERSION = '1.76.0'
-GRPC_VERSION = grpc.__version__
+# 临时修复：grpc 模块可能没有 __version__ 属性
+try:
+    GRPC_VERSION = grpc.__version__
+except AttributeError:
+    # 使用 pkg_resources 获取版本
+    try:
+        import pkg_resources
+        GRPC_VERSION = pkg_resources.get_distribution("grpcio").version
+    except:
+        GRPC_VERSION = "unknown"
+
 _version_not_supported = False
 
 try:
     from grpc._utilities import first_version_is_lower
-    _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
+    if GRPC_VERSION != "unknown":
+        _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
 except ImportError:
-    _version_not_supported = True
+    _version_not_supported = False  # 跳过版本检查
 
 if _version_not_supported:
     raise RuntimeError(

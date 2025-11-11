@@ -115,22 +115,22 @@ service ParserService {
 }
 
 message ParseRequest {
-  string file_path = 1;
-  string file_format = 2;
-  ParseOptions options = 3;
+  bytes file_content = 1;            // 文件二进制内容（直接上传）
+  string file_name = 2;              // 文件名（用于格式检测）
+  ParseOptions options = 3;          // 解析选项
 }
 
 message ParseOptions {
-  bool enable_ocr = 1;
-  bool enable_caption = 2;
-  int32 max_image_size = 3;
-  string language = 4;
+  bool enable_ocr = 1;               // 是否启用 OCR
+  bool enable_caption = 2;           // 是否启用 VLM Caption
+  int32 max_image_size = 3;          // 最大图像尺寸
+  string language = 4;               // OCR 语言
 }
 
 message ParseResponse {
-  string content = 1;
-  ParseMetadata metadata = 2;
-  string error_message = 3;
+  string content = 1;                // 解析后的文本内容
+  ParseMetadata metadata = 2;        // 元数据
+  string error_message = 3;          // 错误消息
 }
 ```
 
@@ -210,13 +210,15 @@ docker-compose up --build
 
 #### 4. 测试 gRPC 服务
 ```bash
-# 使用 Python 客户端测试
+# 使用 Python 客户端测试（客户端会自动读取本地文件并上传）
 uv run python -c "
 from grpc.client import ParserGrpcClient
 
 with ParserGrpcClient() as client:
-    result = client.parse_file('test.pdf')
+    # 客户端读取本地文件 test.pdf 并上传其二进制内容
+    result = client.parse_file('/path/to/test.pdf')
     print(f'解析成功：{len(result[\"content\"])} 字符')
+    print(f'文件名：{result[\"metadata\"][\"file_name\"]}')
 "
 
 # 健康检查

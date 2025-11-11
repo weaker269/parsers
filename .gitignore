@@ -1,0 +1,6 @@
+__pycache__/
+grpc/__pycache__/
+logs/
+test_核心功能验证.py
+test_client_quick.py
+grpc/generated/__pycache__/

@@ -13,10 +13,17 @@ import grpc
 import logging
 import time
 import os
+import sys
 from typing import Optional, Dict, Any
 from pathlib import Path
 
-from parsers.grpc.generated import parser_pb2, parser_pb2_grpc
+# 添加项目根目录和 grpc 目录到 Python 路径
+project_root = Path(__file__).parent.parent
+grpc_dir = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(grpc_dir))
+
+from generated import parser_pb2, parser_pb2_grpc
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +101,7 @@ class ParserGrpcClient:
         """解析文件
 
         Args:
-            file_path: 文件路径（绝对路径）
+            file_path: 文件路径（客户端本地路径）
             enable_ocr: 是否启用 OCR，默认 True
             enable_caption: 是否启用 VLM Caption，默认 False
             max_image_size: 最大图像尺寸（px），默认 4096
@@ -106,14 +113,26 @@ class ParserGrpcClient:
                 - metadata: 元数据（页数、图像数、表格数、耗时等）
 
         Raises:
+            FileNotFoundError: 文件不存在
             RuntimeError: 解析失败或服务端返回错误
             grpc.RpcError: gRPC 调用失败（重试后仍失败）
         """
         self.connect()
 
+        # 读取文件内容
+        file_path_obj = Path(file_path)
+        if not file_path_obj.exists():
+            raise FileNotFoundError(f"文件不存在: {file_path}")
+
+        with open(file_path_obj, "rb") as f:
+            file_content = f.read()
+
+        logger.info(f"已读取文件: {file_path}, 大小: {len(file_content)} bytes")
+
         # 构造请求
         request = parser_pb2.ParseRequest(
-            file_path=file_path,
+            file_content=file_content,
+            file_name=file_path_obj.name,
             options=parser_pb2.ParseOptions(
                 enable_ocr=enable_ocr,
                 enable_caption=enable_caption,

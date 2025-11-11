@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cparser.proto\x12\x06parser\"]\n\x0cParseRequest\x12\x11\n\tfile_path\x18\x01 \x01(\t\x12\x13\n\x0b\x66ile_format\x18\x02 \x01(\t\x12%\n\x07options\x18\x03 \x01(\x0b\x32\x14.parser.ParseOptions\"d\n\x0cParseOptions\x12\x12\n\nenable_ocr\x18\x01 \x01(\x08\x12\x16\n\x0e\x65nable_caption\x18\x02 \x01(\x08\x12\x16\n\x0emax_image_size\x18\x03 \x01(\x05\x12\x10\n\x08language\x18\x04 \x01(\t\"`\n\rParseResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t\x12\'\n\x08metadata\x18\x02 \x01(\x0b\x32\x15.parser.ParseMetadata\x12\x15\n\rerror_message\x18\x03 \x01(\t\"\x8e\x01\n\rParseMetadata\x12\x12\n\npage_count\x18\x01 \x01(\x05\x12\x13\n\x0bimage_count\x18\x02 \x01(\x05\x12\x13\n\x0btable_count\x18\x03 \x01(\x05\x12\x11\n\tocr_count\x18\x04 \x01(\x05\x12\x15\n\rcaption_count\x18\x05 \x01(\x05\x12\x15\n\rparse_time_ms\x18\x06 \x01(\x02\"%\n\x12HealthCheckRequest\x12\x0f\n\x07service\x18\x01 \x01(\t\"\xa1\x01\n\x13HealthCheckResponse\x12\x39\n\x06status\x18\x01 \x01(\x0e\x32).parser.HealthCheckResponse.ServingStatus\"O\n\rServingStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07SERVING\x10\x01\x12\x0f\n\x0bNOT_SERVING\x10\x02\x12\x13\n\x0fSERVICE_UNKNOWN\x10\x03\x32\x91\x01\n\rParserService\x12\x38\n\tParseFile\x12\x14.parser.ParseRequest\x1a\x15.parser.ParseResponse\x12\x46\n\x0bHealthCheck\x12\x1a.parser.HealthCheckRequest\x1a\x1b.parser.HealthCheckResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cparser.proto\x12\x06parser\"^\n\x0cParseRequest\x12\x14\n\x0c\x66ile_content\x18\x01 \x01(\x0c\x12\x11\n\tfile_name\x18\x02 \x01(\t\x12%\n\x07options\x18\x03 \x01(\x0b\x32\x14.parser.ParseOptions\"d\n\x0cParseOptions\x12\x12\n\nenable_ocr\x18\x01 \x01(\x08\x12\x16\n\x0e\x65nable_caption\x18\x02 \x01(\x08\x12\x16\n\x0emax_image_size\x18\x03 \x01(\x05\x12\x10\n\x08language\x18\x04 \x01(\t\"`\n\rParseResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t\x12\'\n\x08metadata\x18\x02 \x01(\x0b\x32\x15.parser.ParseMetadata\x12\x15\n\rerror_message\x18\x03 \x01(\t\"\x8e\x01\n\rParseMetadata\x12\x12\n\npage_count\x18\x01 \x01(\x05\x12\x13\n\x0bimage_count\x18\x02 \x01(\x05\x12\x13\n\x0btable_count\x18\x03 \x01(\x05\x12\x11\n\tocr_count\x18\x04 \x01(\x05\x12\x15\n\rcaption_count\x18\x05 \x01(\x05\x12\x15\n\rparse_time_ms\x18\x06 \x01(\x02\"%\n\x12HealthCheckRequest\x12\x0f\n\x07service\x18\x01 \x01(\t\"\xa1\x01\n\x13HealthCheckResponse\x12\x39\n\x06status\x18\x01 \x01(\x0e\x32).parser.HealthCheckResponse.ServingStatus\"O\n\rServingStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07SERVING\x10\x01\x12\x0f\n\x0bNOT_SERVING\x10\x02\x12\x13\n\x0fSERVICE_UNKNOWN\x10\x03\x32\x91\x01\n\rParserService\x12\x38\n\tParseFile\x12\x14.parser.ParseRequest\x1a\x15.parser.ParseResponse\x12\x46\n\x0bHealthCheck\x12\x1a.parser.HealthCheckRequest\x1a\x1b.parser.HealthCheckResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,19 +32,19 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'parser_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_PARSEREQUEST']._serialized_start=24
-  _globals['_PARSEREQUEST']._serialized_end=117
-  _globals['_PARSEOPTIONS']._serialized_start=119
-  _globals['_PARSEOPTIONS']._serialized_end=219
-  _globals['_PARSERESPONSE']._serialized_start=221
-  _globals['_PARSERESPONSE']._serialized_end=317
-  _globals['_PARSEMETADATA']._serialized_start=320
-  _globals['_PARSEMETADATA']._serialized_end=462
-  _globals['_HEALTHCHECKREQUEST']._serialized_start=464
-  _globals['_HEALTHCHECKREQUEST']._serialized_end=501
-  _globals['_HEALTHCHECKRESPONSE']._serialized_start=504
-  _globals['_HEALTHCHECKRESPONSE']._serialized_end=665
-  _globals['_HEALTHCHECKRESPONSE_SERVINGSTATUS']._serialized_start=586
-  _globals['_HEALTHCHECKRESPONSE_SERVINGSTATUS']._serialized_end=665
-  _globals['_PARSERSERVICE']._serialized_start=668
-  _globals['_PARSERSERVICE']._serialized_end=813
+  _globals['_PARSEREQUEST']._serialized_end=118
+  _globals['_PARSEOPTIONS']._serialized_start=120
+  _globals['_PARSEOPTIONS']._serialized_end=220
+  _globals['_PARSERESPONSE']._serialized_start=222
+  _globals['_PARSERESPONSE']._serialized_end=318
+  _globals['_PARSEMETADATA']._serialized_start=321
+  _globals['_PARSEMETADATA']._serialized_end=463
+  _globals['_HEALTHCHECKREQUEST']._serialized_start=465
+  _globals['_HEALTHCHECKREQUEST']._serialized_end=502
+  _globals['_HEALTHCHECKRESPONSE']._serialized_start=505
+  _globals['_HEALTHCHECKRESPONSE']._serialized_end=666
+  _globals['_HEALTHCHECKRESPONSE_SERVINGSTATUS']._serialized_start=587
+  _globals['_HEALTHCHECKRESPONSE_SERVINGSTATUS']._serialized_end=666
+  _globals['_PARSERSERVICE']._serialized_start=669
+  _globals['_PARSERSERVICE']._serialized_end=814
 # @@protoc_insertion_point(module_scope)

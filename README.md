@@ -75,8 +75,8 @@ with ParserGrpcClient() as client:
     is_healthy = client.health_check()
     print(f'健康状态: {\"正常\" if is_healthy else \"异常\"}')
 
-    # 解析文件
-    result = client.parse_file('test.pdf')
+    # 解析文件（客户端读取本地文件并上传二进制内容）
+    result = client.parse_file('/path/to/test.pdf')
     print(f'解析成功：{len(result[\"content\"])} 字符')
     print(f'页数：{result[\"metadata\"][\"page_count\"]}')
 "
@@ -90,15 +90,16 @@ with ParserGrpcClient() as client:
 from grpc.client import ParserGrpcClient
 
 # 方法 1：上下文管理器（推荐）
+# 客户端会自动读取本地文件并上传二进制内容
 with ParserGrpcClient(host="localhost", port=50051) as client:
-    result = client.parse_file("research_paper.pdf")
+    result = client.parse_file("/path/to/research_paper.pdf")
     content = result["content"]
     metadata = result["metadata"]
 
 # 方法 2：手动管理连接
 client = ParserGrpcClient()
 client.connect()
-result = client.parse_file("document.docx")
+result = client.parse_file("/path/to/document.docx")
 client.close()
 ```
 
