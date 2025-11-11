@@ -57,9 +57,6 @@ parsers/                          # 项目根目录（可独立移动）
 ├── 核心模块（解析器）
 ├── __init__.py                  # 工厂函数 create_parser()
 ├── base.py                      # BaseParser 抽象基类
-├── service_interface.py         # ParserServiceInterface 抽象
-├── local_service.py             # 本地解析服务实现
-├── grpc_service.py              # gRPC 解析服务实现
 │
 ├── 文档解析器
 ├── pdf_parser.py                # PDF 解析器（双层并发）
