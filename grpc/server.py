@@ -12,6 +12,13 @@
 - 详细的性能监控日志
 """
 
+import sys
+from pathlib import Path
+
+if __package__ is None or __package__ == "":
+    # 直接运行 python grpc/server.py 时补齐项目根目录，避免相对导入失败
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 import grpc
 from concurrent import futures
 import logging
@@ -20,19 +27,9 @@ import signal
 import uuid
 import os
 import asyncio
-from pathlib import Path
 from typing import Optional
 
-import sys
-from pathlib import Path
-
-# 添加项目根目录和 grpc 目录到 Python 路径
-project_root = Path(__file__).parent.parent
-grpc_dir = Path(__file__).parent
-sys.path.insert(0, str(project_root))
-sys.path.insert(0, str(grpc_dir))
-
-from generated import parser_pb2, parser_pb2_grpc
+from parsers.grpc.generated import parser_pb2, parser_pb2_grpc
 from parsers import create_parser
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
