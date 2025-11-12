@@ -39,7 +39,9 @@ from parsers.grpc.generated import parser_pb2, parser_pb2_grpc
 from parsers import create_parser
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
-logger = logging.getLogger(__name__)
+# 复用 parsers 模块的日志配置，保证持久化输出
+_parser_root_logger = logging.getLogger("parsers")
+logger = _parser_root_logger.getChild("grpc.server")
 
 
 class ParserServiceServicer(parser_pb2_grpc.ParserServiceServicer):
