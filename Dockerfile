@@ -9,8 +9,11 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 设置工作目录
-WORKDIR /app
+# 让 Python 可以把 /app 下的 parsers 目录识别为包（等价于本地在父目录运行）
+ENV PYTHONPATH=/app
+
+# 设置工作目录（代码放在 /app/parsers，保持与本地相同的目录名）
+WORKDIR /app/parsers
 
 # 安装 uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -24,7 +27,7 @@ COPY uv.lock* ./
 RUN uv sync --frozen --no-dev || uv sync --no-dev
 
 # 复制项目代码（parsers 项目所有文件）
-COPY . /app/
+COPY . /app/parsers/
 
 # 生成 gRPC 代码
 RUN chmod +x ./scripts/generate_proto.sh && ./scripts/generate_proto.sh
@@ -36,5 +39,5 @@ RUN uv run python -c "from ocr_engine import get_ocr_engine; get_ocr_engine()" |
 # 暴露端口
 EXPOSE 50051
 
-# 启动 gRPC 服务
-CMD ["uv", "run", "python", "-m", "grpc.server"]
+# 启动 gRPC 服务（从父目录视角运行模块）
+CMD ["uv", "run", "python", "-m", "parsers.grpc.server"]
