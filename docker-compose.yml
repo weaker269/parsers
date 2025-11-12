@@ -9,32 +9,15 @@ services:
     ports:
       - "50051:50051"
     environment:
-      # OCR 配置
-      - PADDLEOCR_SHOW_LOG=${PADDLEOCR_SHOW_LOG:-False}
-      - OCR_LANGUAGE=${OCR_LANGUAGE:-ch}
-      - OCR_MAX_IMAGE_SIZE=${OCR_MAX_IMAGE_SIZE:-4096}
+      # gRPC 服务参数（与 .env.example 对齐）
+      - PARSER_GRPC_PORT=${PARSER_GRPC_PORT:-50051}
+      - PARSER_GRPC_MAX_WORKERS=${PARSER_GRPC_MAX_WORKERS:-64}
+      - PARSER_GRPC_PRELOAD_OCR=${PARSER_GRPC_PRELOAD_OCR:-true}
 
-      # 并发配置
-      - PAGE_POOL_MAX_WORKERS=${PAGE_POOL_MAX_WORKERS:-4}
-      - OCR_POOL_MAX_WORKERS=${OCR_POOL_MAX_WORKERS:-4}
-      - OCR_TIMEOUT=${OCR_TIMEOUT:-300}
-
-      # gRPC 配置
-      - GRPC_PORT=${GRPC_PORT:-50051}
-      - GRPC_MAX_WORKERS=${GRPC_MAX_WORKERS:-10}
-      - GRPC_MAX_MESSAGE_LENGTH=${GRPC_MAX_MESSAGE_LENGTH:-52428800}
-
-      # 日志配置
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - LOG_FILE=${LOG_FILE:-logs/parser_service.log}
-
-      # VLM Caption 配置（阶段 4 - 可选）
-      - CAPTION_ENABLED=${CAPTION_ENABLED:-false}
-      - CAPTION_BACKEND=${CAPTION_BACKEND:-ollama}
-      - OLLAMA_API_BASE=${OLLAMA_API_BASE:-http://host.docker.internal:11434}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-llava:13b}
-      - CAPTION_TIMEOUT=${CAPTION_TIMEOUT:-30}
-      - CAPTION_MAX_CONCURRENT=${CAPTION_MAX_CONCURRENT:-10}
+      # 日志输出配置
+      - PARSER_LOG_DIR=${PARSER_LOG_DIR:-./logs}
+      - PARSER_LOG_FILE=${PARSER_LOG_FILE:-parser.log}
+      - PARSER_LOG_LEVEL=${PARSER_LOG_LEVEL:-INFO}
 
     deploy:
       resources:
@@ -96,29 +79,17 @@ networks:
 #
 # 在项目根目录创建 .env 文件，配置以下变量：
 #
-# # OCR 配置
-# PADDLEOCR_SHOW_LOG=False
-# OCR_LANGUAGE=ch
-# OCR_MAX_IMAGE_SIZE=4096
+# # gRPC 服务参数
+# PARSER_GRPC_PORT=50051
+# PARSER_GRPC_MAX_WORKERS=64
+# PARSER_GRPC_PRELOAD_OCR=true
 #
-# # 并发配置
-# PAGE_POOL_MAX_WORKERS=4
-# OCR_POOL_MAX_WORKERS=4
-# OCR_TIMEOUT=300
+# # gRPC 客户端（可选，本地 CLI/调试脚本使用）
+# PARSER_GRPC_HOST=localhost
+# PARSER_GRPC_TIMEOUT=600.0
+# PARSER_GRPC_MAX_RETRIES=3
 #
-# # gRPC 配置
-# GRPC_PORT=50051
-# GRPC_MAX_WORKERS=10
-# GRPC_MAX_MESSAGE_LENGTH=52428800
-#
-# # 日志配置
-# LOG_LEVEL=INFO
-# LOG_FILE=logs/parser_service.log
-#
-# # VLM Caption 配置（阶段 4 - 可选）
-# CAPTION_ENABLED=false
-# CAPTION_BACKEND=ollama
-# OLLAMA_API_BASE=http://host.docker.internal:11434
-# OLLAMA_MODEL=llava:13b
-# CAPTION_TIMEOUT=30
-# CAPTION_MAX_CONCURRENT=10
+# # 日志输出配置
+# PARSER_LOG_DIR=./logs
+# PARSER_LOG_FILE=parser.log
+# PARSER_LOG_LEVEL=INFO
