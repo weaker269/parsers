@@ -371,6 +371,17 @@ def process_slide_worker(slide_idx: int, pptx_path: str, temp_dir: str):
                         logger.debug(f"Slide {slide_idx} 图像过小，跳过")
                         continue
 
+                    # 检测图像格式（只处理支持的位图格式）
+                    SUPPORTED_IMAGE_FORMATS = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.tif'}
+                    image_ext = f".{image.ext}"
+
+                    if image_ext.lower() not in SUPPORTED_IMAGE_FORMATS:
+                        logger.info(
+                            f"Slide {slide_idx} 跳过不支持的图像格式: {image_ext} "
+                            f"(矢量/特殊格式，通常为装饰性元素，不影响OCR文字提取)"
+                        )
+                        continue
+
                     # 背景图检测
                     width_px = int(shape.width / 914400 * 96) if hasattr(shape, 'width') else None
                     height_px = int(shape.height / 914400 * 96) if hasattr(shape, 'height') else None

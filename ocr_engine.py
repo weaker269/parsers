@@ -166,7 +166,12 @@ class OCREngine:
             return image_array
 
         except Exception as e:
-            logger.error(f"图像预处理失败: {e}")
+            # 区分格式不支持（降级为WARNING）和真正的错误（保持ERROR）
+            error_msg = str(e).lower()
+            if "cannot find loader" in error_msg or "cannot identify image" in error_msg:
+                logger.warning(f"图像格式不支持或无法识别: {e}")
+            else:
+                logger.error(f"图像预处理失败: {e}")
             raise ValueError(f"无法处理图像数据: {e}")
 
     def _resize_if_needed(self, image: Image.Image) -> Image.Image:
