@@ -156,18 +156,31 @@ class ParserServiceServicer(parser_pb2_grpc.ParserServiceServicer):
 
 
 def _preload_ocr_engine():
-    """预加载 OCR 引擎（优化首次调用速度）
-
-    OCR 引擎初始化需要 15-20 秒，首次调用会加载模型（~500MB）。
-    预加载可以避免首次请求的长时间等待。
-    """
+    """通过进程池并行预热 OCR"""
     try:
-        logger.info("预加载 OCR 引擎...")
-        from parsers.ocr_engine import get_ocr_engine
-        get_ocr_engine()  # 单例模式，首次调用会加载模型
-        logger.info("OCR 引擎加载完成！")
+        from parsers.base import _get_process_pool
+        from parsers.ocr_worker import ocr_worker
+        from PIL import Image
+        import io
+
+        logger.info("预加载 OCR 引擎（进程池模式）...")
+
+        # 构造一张内存里的纯白示例图，触发 OCR 模型加载
+        image = Image.new('RGB', (64, 64), color='white')
+        buffer = io.BytesIO()
+        image.save(buffer, format='PNG')
+        dummy_bytes = buffer.getvalue()
+
+        pool = _get_process_pool()  # 创建并预热全局进程池
+
+        futures = [pool.submit(ocr_worker, dummy_bytes) for _ in range(2)]
+        for idx, future in enumerate(futures, start=1):
+            future.result(timeout=180)
+            logger.info(f"✅ OCR 子进程 {idx}/{len(futures)} 预热完成")
+
+        logger.info("🚀 OCR 引擎预热成功，服务已就绪")
     except Exception as e:
-        logger.warning(f"OCR 引擎预加载失败（不影响服务启动）: {e}")
+        logger.warning(f"OCR 引擎预加载失败（首次请求将触发初始化）: {e}", exc_info=True)
 
 
 def serve(port: int = 50051, max_workers: int = 10, preload_ocr: bool = True):
