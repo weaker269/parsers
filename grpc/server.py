@@ -28,6 +28,7 @@ load_dotenv(ROOT_DIR / ".env", override=False)
 import grpc
 from concurrent import futures
 import logging
+from logging.handlers import RotatingFileHandler
 import time
 import signal
 import uuid
@@ -39,9 +40,29 @@ from parsers.grpc.generated import parser_pb2, parser_pb2_grpc
 from parsers import create_parser
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
-# 复用 parsers 模块的日志配置，保证持久化输出
-_parser_root_logger = logging.getLogger("parsers")
-logger = _parser_root_logger.getChild("grpc.server")
+# gRPC 服务独立日志配置
+# 与 parser 模块日志分离，目录由 PARSER_LOG_DIR 控制
+_log_dir = os.getenv("PARSER_LOG_DIR", "./logs")
+_server_log_file = os.getenv("PARSER_SERVER_LOG_FILE", "server.log")
+os.makedirs(_log_dir, exist_ok=True)
+_server_log_path = os.path.join(_log_dir, _server_log_file)
+
+logger = logging.getLogger("parsers.grpc.server")
+if not getattr(logger, "_parsers_grpc_handler_installed", False):
+    handler = RotatingFileHandler(
+        _server_log_path,
+        maxBytes=5 * 1024 * 1024,
+        backupCount=5,
+        encoding="utf-8"
+    )
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(process)d - %(thread)d - %(filename)s:%(lineno)d - %(message)s'
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(os.getenv("PARSER_LOG_LEVEL", "INFO").upper())
+    logger.propagate = True  # 仍允许输出到控制台
+    logger._parsers_grpc_handler_installed = True  # type: ignore[attr-defined]
 
 
 class ParserServiceServicer(parser_pb2_grpc.ParserServiceServicer):
