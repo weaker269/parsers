@@ -14,10 +14,16 @@
 
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
 
 if __package__ is None or __package__ == "":
     # 直接运行 python grpc/server.py 时补齐项目根目录，避免相对导入失败
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
+    sys.path.append(str(ROOT_DIR))
+
+# 自动加载根目录下的 .env 配置（若存在）
+load_dotenv(ROOT_DIR / ".env", override=False)
 
 import grpc
 from concurrent import futures

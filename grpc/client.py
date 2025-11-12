@@ -13,17 +13,16 @@ import grpc
 import logging
 import time
 import os
-import sys
 from typing import Optional, Dict, Any
 from pathlib import Path
 
-# 添加项目根目录和 grpc 目录到 Python 路径
-project_root = Path(__file__).parent.parent
-grpc_dir = Path(__file__).parent
-sys.path.insert(0, str(project_root))
-sys.path.insert(0, str(grpc_dir))
+from dotenv import load_dotenv
 
-from generated import parser_pb2, parser_pb2_grpc
+# 加载项目根目录的 .env（兼容直接运行脚本的场景）
+ROOT_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT_DIR / ".env", override=False)
+
+from parsers.grpc.generated import parser_pb2, parser_pb2_grpc
 
 logger = logging.getLogger(__name__)
 

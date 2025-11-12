@@ -12,6 +12,13 @@
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# 确保导入 parsers 时自动加载根目录下的 .env
+ROOT_DIR = Path(__file__).resolve().parent
+load_dotenv(ROOT_DIR / ".env", override=False)
 
 
 def _configure_parser_logging():
