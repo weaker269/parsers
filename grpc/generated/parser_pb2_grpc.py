@@ -6,7 +6,7 @@ import warnings
 from . import parser_pb2 as parser__pb2
 
 GRPC_GENERATED_VERSION = '1.76.0'
-# 临时修复：grpc 模块可能没有 __version__ 属性
+
 try:
     GRPC_VERSION = grpc.__version__
 except AttributeError:

@@ -42,9 +42,9 @@ def _get_process_pool() -> ProcessPoolExecutor:
     if _process_pool is None:
         from parsers.ocr_worker import init_ocr_worker
 
-        # 计算进程池大小（限制为 min(cpu_count(), 2)）
-        # 每个子进程约占用 500MB 内存，2 个进程约 1GB
-        num_processes = min(multiprocessing.cpu_count(), 2)
+        # 计算进程池大小（限制为 min(cpu_count(), 5)）
+        # 每个子进程约占用 500MB 内存，5 个进程约 2.5GB
+        num_processes = min(multiprocessing.cpu_count(), 5)
 
         # 显式获取 spawn 上下文（确保使用 spawn 模式）
         mp_context = multiprocessing.get_context("spawn")
