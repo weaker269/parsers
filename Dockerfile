@@ -18,8 +18,8 @@ WORKDIR /app/parsers
 # 安装 uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# 复制依赖文件
-COPY pyproject.toml ./
+# 复制依赖文件和构建所需元数据
+COPY pyproject.toml README.md ./
 # 如果存在 uv.lock，也复制它
 COPY uv.lock* ./
 
