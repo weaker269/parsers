@@ -33,7 +33,7 @@ def _configure_parser_logging():
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, log_file)
 
-    handler = RotatingFileHandler(
+    file_handler = RotatingFileHandler(
         log_path,
         maxBytes=5 * 1024 * 1024,
         backupCount=5,
@@ -42,9 +42,13 @@ def _configure_parser_logging():
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(process)d - %(thread)d - %(filename)s:%(lineno)d - %(message)s'
     )
-    handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
 
-    parser_logger.addHandler(handler)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+
+    parser_logger.addHandler(file_handler)
+    parser_logger.addHandler(stream_handler)
     parser_logger.setLevel(os.getenv("PARSER_LOG_LEVEL", "INFO").upper())
 
     # 保持独立日志文件，避免回传到根 logger

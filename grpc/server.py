@@ -49,7 +49,7 @@ _server_log_path = os.path.join(_log_dir, _server_log_file)
 
 logger = logging.getLogger("parsers.grpc.server")
 if not getattr(logger, "_parsers_grpc_handler_installed", False):
-    handler = RotatingFileHandler(
+    file_handler = RotatingFileHandler(
         _server_log_path,
         maxBytes=5 * 1024 * 1024,
         backupCount=5,
@@ -58,10 +58,15 @@ if not getattr(logger, "_parsers_grpc_handler_installed", False):
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(process)d - %(thread)d - %(filename)s:%(lineno)d - %(message)s'
     )
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    file_handler.setFormatter(formatter)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
     logger.setLevel(os.getenv("PARSER_LOG_LEVEL", "INFO").upper())
-    logger.propagate = True  # 仍允许输出到控制台
+    logger.propagate = False  # 使用自定义控制台 handler
     logger._parsers_grpc_handler_installed = True  # type: ignore[attr-defined]
 
 
