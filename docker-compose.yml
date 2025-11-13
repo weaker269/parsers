@@ -27,7 +27,7 @@ services:
           cpus: '1'             # CPU 预留
 
     healthcheck:
-      test: ["CMD", "/bin/bash", "./scripts/grpc_health_check.sh"]
+      test: ["CMD", "/bin/bash", "/app/parsers/scripts/grpc_health_check.sh"]
       interval: 30s
       timeout: 10s
       retries: 3

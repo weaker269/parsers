@@ -36,6 +36,9 @@ RUN chmod +x ./scripts/generate_proto.sh && ./scripts/generate_proto.sh
 # 这会触发 PaddleOCR 模型下载到 ~/.paddleocr/ 目录
 RUN uv run python -c "from ocr_engine import get_ocr_engine; get_ocr_engine()" || echo "OCR 模型预加载失败，将在首次运行时下载"
 
+# 运行时切换到 /app，避免与本地 grpc 包命名冲突
+WORKDIR /app
+
 # 暴露端口
 EXPOSE 50051
 
