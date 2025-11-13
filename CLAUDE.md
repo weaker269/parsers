@@ -40,9 +40,11 @@ parsers/                          # 项目根目录（可独立移动）
 ├── docker-compose.yml           # 容器编排配置
 │
 ├── scripts/                     # 工具脚本
+│   ├── start.sh                 # 启动服务（后台运行 + 进程管理）
+│   ├── stop.sh                  # 停止服务（优雅关闭 + 子进程清理）
 │   ├── generate_proto.sh        # Proto 代码生成
 │   ├── grpc_health_check.sh     # 健康检查
-│   ├── start_grpc_server.sh     # 启动服务
+│   ├── start_grpc_server.sh     # 启动服务（前台运行，开发模式）
 │   └── docker_start.sh          # Docker 启动
 │
 ├── grpc/                        # gRPC 服务实现
@@ -190,11 +192,30 @@ ls -lh grpc/generated/
 ```
 
 #### 3. 启动 gRPC 服务
+
+**推荐方式：使用 start.sh 和 stop.sh 脚本（后台运行 + 优雅关闭）**
+
 ```bash
-# 方法 1：直接启动
+# 启动服务（后台运行，支持进程管理）
+./scripts/start.sh
+
+# 查看日志
+tail -f logs/run.out
+
+# 停止服务（优雅关闭，清理所有子进程）
+./scripts/stop.sh
+
+# 重启服务
+./scripts/stop.sh && ./scripts/start.sh
+```
+
+**其他启动方式：**
+
+```bash
+# 方法 1：前台启动（开发调试）
 uv run python -m grpc.server
 
-# 方法 2：使用脚本
+# 方法 2：使用旧版启动脚本（前台运行）
 chmod +x scripts/start_grpc_server.sh
 ./scripts/start_grpc_server.sh
 
@@ -204,6 +225,19 @@ docker-compose up --build
 # 验证服务运行
 # 日志应该显示："🚀 Parser gRPC 服务已启动，端口: 50051"
 ```
+
+**start.sh 脚本特性：**
+- ✅ 后台运行（nohup），不依赖终端
+- ✅ PID 文件管理（logs/server.pid）
+- ✅ 进程锁保护，防止重复启动
+- ✅ 自动检测导入路径（从上层目录运行）
+- ✅ 完整的启动验证和日志输出
+
+**stop.sh 脚本特性：**
+- ✅ 优雅关闭（SIGTERM），等待当前请求完成
+- ✅ 进程组管理，清理所有子进程（OCR 进程池）
+- ✅ 超时保护（30 秒），自动强制终止
+- ✅ 完整的错误处理和状态报告
 
 #### 4. 测试 gRPC 服务
 ```bash

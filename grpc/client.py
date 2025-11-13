@@ -6,7 +6,6 @@
 - 健康检查
 - 上下文管理器（with 语句）
 
-基于 WeKnora 项目的微服务客户端设计模式。
 """
 
 import grpc
@@ -36,12 +35,12 @@ class ParserGrpcClient:
         # 方式 1：手动管理连接
         client = ParserGrpcClient(host="localhost", port=50051)
         client.connect()
-        result = client.parse_file("/path/to/file.pdf")
+        result = client.parse_bytes(content, filename)
         client.close()
 
         # 方式 2：上下文管理器（推荐）
         with ParserGrpcClient() as client:
-            result = client.parse_file("/path/to/file.pdf")
+            result = client.parse_bytes(content, filename)
     """
 
     def __init__(
@@ -89,18 +88,20 @@ class ParserGrpcClient:
             self._stub = None
             logger.info("已断开 Parser gRPC 服务连接")
 
-    def parse_file(
+    def parse_bytes(
         self,
-        file_path: str,
+        file_content: bytes,
+        file_name: str,
         enable_ocr: bool = True,
         enable_caption: bool = False,
         max_image_size: int = 4096,
         language: str = "ch",
     ) -> Dict[str, Any]:
-        """解析文件
+        """解析二进制文件内容（用于已上传的文件）
 
         Args:
-            file_path: 文件路径（客户端本地路径）
+            file_content: 文件二进制内容
+            file_name: 文件名（用于格式检测，如 "report.pdf"）
             enable_ocr: 是否启用 OCR，默认 True
             enable_caption: 是否启用 VLM Caption，默认 False
             max_image_size: 最大图像尺寸（px），默认 4096
@@ -112,26 +113,17 @@ class ParserGrpcClient:
                 - metadata: 元数据（页数、图像数、表格数、耗时等）
 
         Raises:
-            FileNotFoundError: 文件不存在
             RuntimeError: 解析失败或服务端返回错误
             grpc.RpcError: gRPC 调用失败（重试后仍失败）
         """
         self.connect()
 
-        # 读取文件内容
-        file_path_obj = Path(file_path)
-        if not file_path_obj.exists():
-            raise FileNotFoundError(f"文件不存在: {file_path}")
-
-        with open(file_path_obj, "rb") as f:
-            file_content = f.read()
-
-        logger.info(f"已读取文件: {file_path}, 大小: {len(file_content)} bytes")
+        logger.info(f"解析文件内容: {file_name}, 大小: {len(file_content)} bytes")
 
         # 构造请求
         request = parser_pb2.ParseRequest(
             file_content=file_content,
-            file_name=file_path_obj.name,
+            file_name=file_name,
             options=parser_pb2.ParseOptions(
                 enable_ocr=enable_ocr,
                 enable_caption=enable_caption,
@@ -143,7 +135,7 @@ class ParserGrpcClient:
         # 执行 RPC 调用（带重试）
         for attempt in range(self.max_retries):
             try:
-                logger.info(f"解析文件 (尝试 {attempt + 1}/{self.max_retries}): {file_path}")
+                logger.info(f"调用 gRPC 解析 (尝试 {attempt + 1}/{self.max_retries}): {file_name}")
 
                 response = self._stub.ParseFile(
                     request,
@@ -156,7 +148,7 @@ class ParserGrpcClient:
 
                 # 返回结果
                 logger.info(
-                    f"解析成功: {file_path}, "
+                    f"解析成功: {file_name}, "
                     f"耗时 {response.metadata.parse_time_ms:.2f}ms, "
                     f"页数 {response.metadata.page_count}"
                 )
