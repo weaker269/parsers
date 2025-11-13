@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Shanghai
+
 # 安装系统依赖（PaddleOCR 需要）
 RUN apt-get update && apt-get install -y \
     libgomp1 \
@@ -7,7 +10,11 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     libxrender-dev \
+    libgl1-mesa-glx \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # 让 Python 可以把 /app 下的 parsers 目录识别为包（等价于本地在父目录运行）
 ENV PYTHONPATH=/app
