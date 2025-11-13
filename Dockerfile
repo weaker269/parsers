@@ -42,5 +42,5 @@ WORKDIR /app
 # 暴露端口
 EXPOSE 50051
 
-# 启动 gRPC 服务（从父目录视角运行模块）
-CMD ["uv", "run", "python", "-m", "parsers.grpc.server"]
+# 启动 gRPC 服务（指定项目路径，确保使用已安装依赖）
+CMD ["uv", "run", "--project", "/app/parsers", "python", "-m", "parsers.grpc.server"]
