@@ -58,6 +58,7 @@ def _configure_parser_logging():
 
 _configure_parser_logging()
 
+from .models import ParseResult, ParseMetadata
 from .pdf_parser import PDFParser
 from .docx_parser import DocxParser
 from .md_parser import MarkdownParser
@@ -101,4 +102,4 @@ def create_parser(file_ext: str):
 
 
 # 导出公共 API
-__all__ = ['create_parser', 'PDFParser', 'DocxParser', 'MarkdownParser', 'PptxParser']
+__all__ = ['create_parser', 'ParseResult', 'ParseMetadata', 'PDFParser', 'DocxParser', 'MarkdownParser', 'PptxParser']

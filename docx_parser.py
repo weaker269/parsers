@@ -13,6 +13,7 @@ from io import BytesIO
 import asyncio
 from docx import Document
 from .base import BaseParser
+from .models import ParseResult, ParseMetadata
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,14 +28,14 @@ class DocxParser(BaseParser):
     内部使用异步并发处理图像 OCR，显著提升多图场景性能。
     """
 
-    async def parse(self, content: bytes) -> str:
+    async def parse(self, content: bytes) -> ParseResult:
         """解析 Word 文档（异步版本）
 
         Args:
             content: DOCX 文件的二进制内容
 
         Returns:
-            解析后的文本内容
+            ParseResult: 包含解析后的文本内容和元数据
 
         Note:
             - 内部使用异步并发处理图像 OCR，提升性能 3-5 倍
@@ -48,7 +49,7 @@ class DocxParser(BaseParser):
             logger.warning(f"Async DOCX parsing failed: {e}, using fallback")
             return self._parse_simple(content)
 
-    async def _parse_advanced(self, content: bytes) -> str:
+    async def _parse_advanced(self, content: bytes) -> ParseResult:
         """完整异步解析：段落 + 表格 + 图像OCR
 
         提取所有段落文本、表格、图像，保持原始顺序。
@@ -58,7 +59,7 @@ class DocxParser(BaseParser):
             content: DOCX 文件的二进制内容
 
         Returns:
-            解析后的文本内容（包含 OCR 识别的文字）
+            ParseResult: 包含解析后的文本内容和元数据
 
         Note:
             - 使用 content_sequence 维护图文混排的原始顺序
@@ -68,8 +69,9 @@ class DocxParser(BaseParser):
         doc = Document(BytesIO(content))
         content_sequence = []  # 维护图文混排顺序
         image_count = 0
+        table_count = len(doc.tables)
 
-        logger.debug(f"开始异步解析 DOCX，共 {len(doc.paragraphs)} 个段落，{len(doc.tables)} 个表格")
+        logger.debug(f"开始异步解析 DOCX，共 {len(doc.paragraphs)} 个段落，{table_count} 个表格")
 
         # 1. 构建内容序列（段落 + 表格 + 图像，保持原始顺序）
         for element in doc.element.body:
@@ -168,9 +170,20 @@ class DocxParser(BaseParser):
                     ocr_text = ocr_results_map[img_num]
                     result_parts.append(f"[图像 {img_num} OCR 内容]:\n{ocr_text}")
 
-        return "\n\n".join(result_parts)
+        # 5. 收集元数据
+        metadata = ParseMetadata(
+            page_count=0,  # DOCX 没有页的概念
+            image_count=image_count,
+            table_count=table_count,
+            ocr_count=len(ocr_results_map),
+            caption_count=0,  # 暂不支持 VLM Caption
+            parse_time_ms=0.0  # 由服务端计算
+        )
 
-    def _parse_simple(self, content: bytes) -> str:
+        text_content = "\n\n".join(result_parts)
+        return ParseResult(content=text_content, metadata=metadata)
+
+    def _parse_simple(self, content: bytes) -> ParseResult:
         """简化回退方案：纯文本拼接
 
         忽略所有格式和图像，只提取纯文本内容。
@@ -180,7 +193,7 @@ class DocxParser(BaseParser):
             content: DOCX 文件的二进制内容
 
         Returns:
-            解析后的纯文本内容（不包含图像 OCR）
+            ParseResult: 包含解析后的纯文本内容和元数据（不包含图像 OCR）
 
         Note:
             - 忽略图像（不执行 OCR）
@@ -197,13 +210,26 @@ class DocxParser(BaseParser):
                 parts.append(text)
 
         # 表格：简单拼接单元格
+        table_count = 0
         for table in doc.tables:
             for row in table.rows:
                 row_text = " | ".join([cell.text.strip() for cell in row.cells])
                 if row_text.strip():
                     parts.append(row_text)
+            table_count += 1
 
-        return "\n\n".join(parts)
+        # 简化模式的元数据（无 OCR）
+        metadata = ParseMetadata(
+            page_count=0,  # DOCX 没有页的概念
+            image_count=0,  # 简化模式不处理图像
+            table_count=table_count,
+            ocr_count=0,  # 简化模式不执行 OCR
+            caption_count=0,
+            parse_time_ms=0.0  # 由服务端计算
+        )
+
+        text_content = "\n\n".join(parts)
+        return ParseResult(content=text_content, metadata=metadata)
 
     def _table_to_markdown(self, table) -> str:
         """将 Word 表格转为 Markdown（增强版本）

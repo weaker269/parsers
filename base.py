@@ -10,6 +10,8 @@ import multiprocessing
 from typing import Optional, List, Tuple
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
+from .models import ParseResult, ParseMetadata
+
 logger = logging.getLogger(__name__)
 
 # 全局进程池实例（单例模式）
@@ -105,14 +107,14 @@ class BaseParser(ABC):
     """
 
     @abstractmethod
-    async def parse(self, content: bytes) -> str:
+    async def parse(self, content: bytes) -> ParseResult:
         """解析文件内容为文本（异步方法）
 
         Args:
             content: 文件二进制内容
 
         Returns:
-            解析后的纯文本内容
+            ParseResult: 包含解析后的文本内容和元数据
 
         Raises:
             Exception: 解析失败时抛出异常

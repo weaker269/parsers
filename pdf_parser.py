@@ -14,6 +14,7 @@ import logging
 import asyncio
 import pdfplumber
 from .base import BaseParser
+from .models import ParseResult, ParseMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class PDFParser(BaseParser):
     内部使用异步并发处理图像 OCR，显著提升多图场景性能。
     """
 
-    async def parse(self, content: bytes) -> str:
+    async def parse(self, content: bytes) -> ParseResult:
         """使用双层并发解析 PDF 文档（内部异步实现）
 
         第一层：页面级并发（解析并发）
@@ -43,7 +44,7 @@ class PDFParser(BaseParser):
             content: PDF 文件的二进制内容
 
         Returns:
-            解析后的文本内容，包含表格的 Markdown 表示
+            ParseResult: 包含解析后的文本内容和元数据
 
         Note:
             - 性能提升：约 6-15x（解析并发 3-5x × OCR 并发 2-3x）
@@ -166,8 +167,26 @@ class PDFParser(BaseParser):
 
             logger.info(f"PDF 双层并发解析完成，成功处理 {len(all_pages)} 页")
 
-            # 8. 用分页符连接所有页面
-            return "\n\n--- Page Break ---\n\n".join(all_pages)
+            # 8. 收集元数据统计
+            table_count = sum(
+                1 for page_data in page_results
+                for content_type, _, _ in page_data.content_parts
+                if content_type == "table"
+            )
+
+            metadata = ParseMetadata(
+                page_count=page_count,
+                image_count=len(all_image_paths),
+                table_count=table_count,
+                ocr_count=len(ocr_results_map),
+                caption_count=0,  # 暂不支持 VLM Caption
+                parse_time_ms=0.0  # 由服务端计算
+            )
+
+            # 9. 用分页符连接所有页面
+            text_content = "\n\n--- Page Break ---\n\n".join(all_pages)
+
+            return ParseResult(content=text_content, metadata=metadata)
 
         except Exception as e:
             logger.error(f"PDF 双层并发解析失败: {e}", exc_info=True)

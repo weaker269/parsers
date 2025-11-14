@@ -15,6 +15,7 @@ import asyncio
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from .base import BaseParser
+from .models import ParseResult, ParseMetadata
 from .narrative_optimizer import NarrativeOptimizer
 import logging
 import tempfile
@@ -32,14 +33,14 @@ class PptxParser(BaseParser):
     内部使用双层并发架构（页面级 + OCR 级），性能提升 6-15 倍。
     """
 
-    async def parse(self, content: bytes) -> str:
+    async def parse(self, content: bytes) -> ParseResult:
         """解析 PowerPoint 文档（异步接口，内部使用双层并发）
 
         Args:
             content: PPTX 文件的二进制内容
 
         Returns:
-            解析后的文本内容（按 Slide 组织）
+            ParseResult: 包含解析后的文本内容和元数据
 
         Note:
             - 使用双层并发架构：页面级解析并发 + OCR 识别并发
@@ -164,15 +165,31 @@ class PptxParser(BaseParser):
 
             logger.info(f"PPTX 双层并发解析完成，成功处理 {len(result_parts)} 个 Slide")
 
-            # 8. 合并所有 Slide 内容
+            # 8. 收集元数据统计
+            table_count = sum(
+                1 for slide_data in slide_results
+                for content_type, _, _ in slide_data.content_parts
+                if content_type == "table"
+            )
+
+            metadata = ParseMetadata(
+                page_count=slide_count,
+                image_count=len(all_image_paths),
+                table_count=table_count,
+                ocr_count=len(ocr_results_map),
+                caption_count=0,  # 暂不支持 VLM Caption
+                parse_time_ms=0.0  # 由服务端计算
+            )
+
+            # 9. 合并所有 Slide 内容
             raw_text = "\n\n".join(result_parts)
 
-            # 9. 应用叙述性优化（仅对 PPTX 格式）
+            # 10. 应用叙述性优化（仅对 PPTX 格式）
             logger.debug("开始应用叙述性优化")
             optimized_text = NarrativeOptimizer.optimize(raw_text)
             logger.debug("叙述性优化完成")
 
-            return optimized_text
+            return ParseResult(content=optimized_text, metadata=metadata)
 
         except Exception as e:
             logger.error(f"PPTX 双层并发解析失败: {e}", exc_info=True)

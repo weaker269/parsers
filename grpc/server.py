@@ -130,21 +130,21 @@ class ParserServiceServicer(parser_pb2_grpc.ParserServiceServicer):
             logger.info(f"[{request_id}] 开始解析文件: {request.file_name}")
             parse_start = time.time()
 
-            # 调用异步 parse 方法
-            content = asyncio.run(parser.parse(request.file_content))
+            # 调用异步 parse 方法（现在返回 ParseResult）
+            result = asyncio.run(parser.parse(request.file_content))
 
             parse_duration = time.time() - parse_start
             logger.info(f"[{request_id}] 解析完成，耗时 {parse_duration*1000:.2f}ms")
 
-            # 6. 构造响应
+            # 6. 构造响应（从 ParseResult 获取数据）
             total_duration = (time.time() - start_time) * 1000
 
             metadata = parser_pb2.ParseMetadata(
-                page_count=getattr(parser, 'page_count', 0),
-                image_count=getattr(parser, 'image_count', 0),
-                table_count=getattr(parser, 'table_count', 0),
-                ocr_count=getattr(parser, 'ocr_count', 0),
-                caption_count=getattr(parser, 'caption_count', 0),
+                page_count=result.metadata.page_count,
+                image_count=result.metadata.image_count,
+                table_count=result.metadata.table_count,
+                ocr_count=result.metadata.ocr_count,
+                caption_count=result.metadata.caption_count,
                 parse_time_ms=total_duration,
             )
 
@@ -158,7 +158,7 @@ class ParserServiceServicer(parser_pb2_grpc.ParserServiceServicer):
             )
 
             return parser_pb2.ParseResponse(
-                content=content,
+                content=result.content,
                 metadata=metadata,
             )
 
