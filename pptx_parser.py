@@ -377,7 +377,20 @@ def process_slide_worker(slide_idx: int, pptx_path: str, temp_dir: str):
                     content_parts.append(("table", markdown_table, shape_idx))
 
             # 图像
-            if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+            try:
+                shape_type = shape.shape_type
+            except NotImplementedError:
+                logger.debug(
+                    f"Slide {slide_idx} 跳过无法识别的形状: idx={shape_idx}, tag={getattr(shape.element, 'tag', '')}"
+                )
+                continue
+            except Exception as e:
+                logger.debug(
+                    f"Slide {slide_idx} 读取形状类型异常，跳过该形状: idx={shape_idx}, err={e}"
+                )
+                continue
+
+            if shape_type == MSO_SHAPE_TYPE.PICTURE:
                 try:
                     image = shape.image
                     image_data = image.blob
