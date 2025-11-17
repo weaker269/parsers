@@ -120,7 +120,7 @@ class PptxParser(BaseParser):
                 logger.info(f"开始异步并发 OCR，共 {len(images_data)} 个图像")
                 ocr_results_list = await self.process_images_async(
                     images_data,
-                    max_concurrent=5,
+                    max_concurrent=10,
                     timeout_per_image=180.0  # 单个图像超时 180 秒（首次请求包含模型加载）
                 )
 
