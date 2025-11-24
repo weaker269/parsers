@@ -16,10 +16,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 让 Python 可以把 /app 下的 parsers 目录识别为包（等价于本地在父目录运行）
-ENV PYTHONPATH=/app
-
-# 设置工作目录（代码放在 /app/parsers，保持与本地相同的目录名）
+# 设置工作目录（直接在 parsers 目录内运行）
 WORKDIR /app/parsers
 
 # 安装 uv
@@ -43,11 +40,8 @@ RUN chmod +x ./scripts/generate_proto.sh && ./scripts/generate_proto.sh
 # 这会触发 PaddleOCR 模型下载到 ~/.paddleocr/ 目录
 RUN uv run python -c "from ocr_engine import get_ocr_engine; get_ocr_engine()" || echo "OCR 模型预加载失败，将在首次运行时下载"
 
-# 运行时切换到 /app，避免与本地 grpc 包命名冲突
-WORKDIR /app
-
 # 暴露端口
 EXPOSE 50051
 
-# 启动 gRPC 服务（指定项目路径，确保使用已安装依赖）
-CMD ["uv", "run", "--project", "/app/parsers", "python", "-m", "parsers.grpc.server"]
+# 启动 gRPC 服务（在 parsers/ 目录内使用 -m 模式）
+CMD ["uv", "run", "python", "-m", "parsers.grpc_service.server"]

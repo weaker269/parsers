@@ -19,9 +19,16 @@ from dotenv import load_dotenv
 
 # 加载项目根目录的 .env（兼容直接运行脚本的场景）
 ROOT_DIR = Path(__file__).resolve().parents[1]
+PARENT_DIR = ROOT_DIR.parent
+
+# 添加父目录到 sys.path，确保可以导入 parsers 包
+import sys
+if str(PARENT_DIR) not in sys.path:
+    sys.path.insert(0, str(PARENT_DIR))
+
 load_dotenv(ROOT_DIR / ".env", override=False)
 
-from parsers.grpc.generated import parser_pb2, parser_pb2_grpc
+from parsers.grpc_service.generated import parser_pb2, parser_pb2_grpc
 
 logger = logging.getLogger(__name__)
 

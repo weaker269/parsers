@@ -22,7 +22,7 @@ def _get_process_pool() -> ProcessPoolExecutor:
     """获取全局进程池实例（单例模式）
 
     关键配置：
-    1. 进程池大小：min(cpu_count(), 2) - 每进程约 500MB 内存
+    1. 进程池大小：min(cpu_count(), PARSER_OCR_POOL_MAX_LIMIT) - 每进程约 500MB 内存
     2. 启动模式：spawn（显式指定，避免 fork 模式的内存损坏）
     3. 初始化器：init_ocr_worker（子进程启动时独立初始化 Paddle）
 
@@ -37,22 +37,35 @@ def _get_process_pool() -> ProcessPoolExecutor:
     Note:
         - 单例模式：多次调用返回同一实例
         - 首次调用会创建进程池并预热子进程
-        - 进程池大小限制为 min(cpu_count(), 2)，避免内存占用过高
+        - 进程池大小限制为 min(cpu_count(), PARSER_OCR_POOL_MAX_LIMIT)，避免内存占用过高
     """
     global _process_pool
 
     if _process_pool is None:
         from parsers.ocr_worker import init_ocr_worker
+        import os
 
-        # 计算进程池大小（限制为 min(cpu_count(), 5)）
-        # 每个子进程约占用 500MB 内存，5 个进程约 2.5GB
-        num_processes = min(multiprocessing.cpu_count(), 5)
+        # 从环境变量读取进程池配置
+        max_workers = int(os.getenv("PARSER_OCR_POOL_MAX_WORKERS", "0"))
+
+        if max_workers == 0:
+            # 自动计算：使用 CPU 核心数，但有上限
+            cpu_count = multiprocessing.cpu_count()
+            max_limit = int(os.getenv("PARSER_OCR_POOL_MAX_LIMIT", "5"))
+            num_processes = min(cpu_count, max_limit)
+        else:
+            # 使用用户指定的值
+            num_processes = max_workers
+            cpu_count = multiprocessing.cpu_count()
+
+        # 确保至少有 1 个 worker（容错）
+        num_processes = max(1, num_processes)
 
         # 显式获取 spawn 上下文（确保使用 spawn 模式）
         mp_context = multiprocessing.get_context("spawn")
 
         logger.info(
-            f"创建全局进程池（大小: {num_processes}, 启动模式: spawn）"
+            f"创建全局 OCR 进程池（大小: {num_processes}, 启动模式: spawn, CPU核心: {cpu_count}）"
         )
 
         # 创建进程池
@@ -269,8 +282,8 @@ class BaseParser(ABC):
     async def process_images_async(
         self,
         images_data: List[bytes],
-        max_concurrent: int = 5,
-        timeout_per_image: float = 180.0
+        max_concurrent: Optional[int] = None,
+        timeout_per_image: Optional[float] = None
     ) -> List[Tuple[int, str]]:
         """批量异步处理多个图像的 OCR 识别（多进程版本）
 
@@ -279,8 +292,8 @@ class BaseParser(ABC):
 
         Args:
             images_data: 图像二进制数据列表
-            max_concurrent: 最大并发数，默认 5
-            timeout_per_image: 单个图像的超时时间（秒），默认 60 秒（大图需要更长时间）
+            max_concurrent: 最大并发数，默认从环境变量 PARSER_OCR_MAX_CONCURRENT 读取（默认 10）
+            timeout_per_image: 单个图像的超时时间（秒），默认从环境变量 PARSER_OCR_TIMEOUT_PER_IMAGE 读取（默认 180.0）
 
         Returns:
             成功识别的图像列表，每个元素为 (image_index, ocr_text)
@@ -293,6 +306,13 @@ class BaseParser(ABC):
         """
         if not images_data:
             return []
+
+        # 从环境变量读取配置（如果未显式传递参数）
+        import os
+        if max_concurrent is None:
+            max_concurrent = int(os.getenv("PARSER_OCR_MAX_CONCURRENT", "10"))
+        if timeout_per_image is None:
+            timeout_per_image = float(os.getenv("PARSER_OCR_TIMEOUT_PER_IMAGE", "180.0"))
 
         logger.info(f"开始异步批量处理 {len(images_data)} 个图像（最大并发数: {max_concurrent}）")
 

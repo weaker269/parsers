@@ -6,3 +6,4 @@ test_client_quick.py
 grpc/generated/__pycache__/
 example/10-通用数据治理培训-数据采集汇聚-孙丽娟.pptx
 .env
+.serena

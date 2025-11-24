@@ -14,13 +14,16 @@
 
 import sys
 from pathlib import Path
+
+# 添加父目录到 sys.path，支持在 parsers/ 目录内直接运行
+# 这样可以使用 `python -m parsers.grpc_service.server` 而无需切换到父目录
+ROOT_DIR = Path(__file__).resolve().parents[1]  # parsers/ 目录
+PARENT_DIR = ROOT_DIR.parent  # parsers 的父目录
+
+if str(PARENT_DIR) not in sys.path:
+    sys.path.insert(0, str(PARENT_DIR))
+
 from dotenv import load_dotenv
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-
-if __package__ is None or __package__ == "":
-    # 直接运行 python grpc/server.py 时补齐项目根目录，避免相对导入失败
-    sys.path.append(str(ROOT_DIR))
 
 # 自动加载根目录下的 .env 配置（若存在）
 load_dotenv(ROOT_DIR / ".env", override=False)
@@ -36,7 +39,7 @@ import os
 import asyncio
 from typing import Optional
 
-from parsers.grpc.generated import parser_pb2, parser_pb2_grpc
+from parsers.grpc_service.generated import parser_pb2, parser_pb2_grpc
 from parsers import create_parser
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
@@ -47,7 +50,7 @@ _server_log_file = os.getenv("PARSER_SERVER_LOG_FILE", "server.log")
 os.makedirs(_log_dir, exist_ok=True)
 _server_log_path = os.path.join(_log_dir, _server_log_file)
 
-logger = logging.getLogger("parsers.grpc.server")
+logger = logging.getLogger("parsers.grpc_service.server")
 if not getattr(logger, "_parsers_grpc_handler_installed", False):
     file_handler = RotatingFileHandler(
         _server_log_path,

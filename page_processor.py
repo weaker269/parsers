@@ -44,10 +44,21 @@ def _get_page_process_pool() -> ProcessPoolExecutor:
     global _page_process_pool
 
     if _page_process_pool is None:
-        # 计算进程池大小（保守策略）
-        cpu_count = multiprocessing.cpu_count()
-        # 保留 2 核给 OCR 进程池和系统，最大不超过 32
-        num_processes = min(cpu_count - 2, 32)
+        import os
+
+        # 从环境变量读取进程池配置
+        max_workers = int(os.getenv("PARSER_PAGE_POOL_MAX_WORKERS", "0"))
+
+        if max_workers == 0:
+            # 自动计算：保留核心数 - 最大上限
+            cpu_count = multiprocessing.cpu_count()
+            reserved_cores = int(os.getenv("PARSER_PAGE_POOL_RESERVED_CORES", "2"))
+            max_limit = int(os.getenv("PARSER_PAGE_POOL_MAX_LIMIT", "32"))
+            num_processes = min(cpu_count - reserved_cores, max_limit)
+        else:
+            # 使用用户指定的值
+            num_processes = max_workers
+            cpu_count = multiprocessing.cpu_count()
 
         # 确保至少有 1 个 worker（容错）
         num_processes = max(1, num_processes)

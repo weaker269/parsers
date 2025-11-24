@@ -17,14 +17,27 @@ services:
       - PARSER_LOG_FILE=${PARSER_LOG_FILE:-parser.log}
       - PARSER_LOG_LEVEL=${PARSER_LOG_LEVEL:-INFO}
 
+      # 页面级进程池配置（动态调整并发性能）
+      - PARSER_PAGE_POOL_MAX_WORKERS=${PARSER_PAGE_POOL_MAX_WORKERS:-0}
+      - PARSER_PAGE_POOL_RESERVED_CORES=${PARSER_PAGE_POOL_RESERVED_CORES:-2}
+      - PARSER_PAGE_POOL_MAX_LIMIT=${PARSER_PAGE_POOL_MAX_LIMIT:-32}
+
+      # OCR 进程池配置（动态调整 OCR 引擎进程数）
+      - PARSER_OCR_POOL_MAX_WORKERS=${PARSER_OCR_POOL_MAX_WORKERS:-0}
+      - PARSER_OCR_POOL_MAX_LIMIT=${PARSER_OCR_POOL_MAX_LIMIT:-5}
+
+      # OCR 并发配置（动态调整 OCR 性能）
+      - PARSER_OCR_MAX_CONCURRENT=${PARSER_OCR_MAX_CONCURRENT:-10}
+      - PARSER_OCR_TIMEOUT_PER_IMAGE=${PARSER_OCR_TIMEOUT_PER_IMAGE:-180.0}
+
     deploy:
       resources:
         limits:
-          memory: 1G            # 内存限制
-          cpus: '2'             # CPU 限制
+          memory: 4G            # 内存限制（提升到 4GB，适应多进程）
+          # cpus: '2'           # 已移除 CPU 限制，使用主机所有核心
         reservations:
-          memory: 512M          # 内存预留
-          cpus: '1'             # CPU 预留
+          memory: 1G            # 内存预留（提升到 1GB）
+          # cpus: '1'           # 已移除 CPU 预留
 
     healthcheck:
       test: ["CMD", "/bin/bash", "/app/parsers/scripts/grpc_health_check.sh"]

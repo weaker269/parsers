@@ -52,26 +52,30 @@ export PARSER_GRPC_PRELOAD_OCR="${PARSER_GRPC_PRELOAD_OCR:-true}"
 export PARSER_LOG_DIR="${PROJECT_ROOT}/logs"
 export PARSER_LOG_LEVEL="${PARSER_LOG_LEVEL:-INFO}"
 
+# 设置 PYTHONPATH 指向父目录，让 Python 可以找到 parsers 包
+export PYTHONPATH="${PARENT_DIR}:${PYTHONPATH}"
+
 echo -e "${GREEN}📋 配置信息:${NC}"
 echo "   项目根目录: ${PROJECT_ROOT}"
+echo "   PYTHONPATH: ${PARENT_DIR}"
 echo "   监听端口: ${PARSER_GRPC_PORT}"
 echo "   工作线程: ${PARSER_GRPC_MAX_WORKERS}"
 echo "   预加载OCR: ${PARSER_GRPC_PRELOAD_OCR}"
 echo "   日志文件: ${LOG_FILE}"
 
-# 从上层目录启动服务（避免导入问题）
-cd "${PARENT_DIR}"
+# 切换到项目根目录（可以在 parsers/ 目录内工作）
+cd "${PROJECT_ROOT}"
 
 # 检查 Python 模块是否可用
-if ! uv run python -c "import parsers.grpc.server" 2>/dev/null; then
-    echo -e "${RED}❌ 无法导入 parsers.grpc.server 模块${NC}"
+if ! uv run python -c "from parsers.grpc_service import server" 2>/dev/null; then
+    echo -e "${RED}❌ 无法导入 parsers.grpc_service.server 模块${NC}"
     echo "   请确保已安装依赖: uv sync"
     exit 1
 fi
 
-# 后台启动服务
+# 后台启动服务（使用 -m 模式，从 parsers/ 目录内启动）
 echo -e "${GREEN}🔧 启动服务进程...${NC}"
-nohup uv run python -m parsers.grpc.server > "${LOG_FILE}" 2>&1 &
+nohup uv run python -m parsers.grpc_service.server > "${LOG_FILE}" 2>&1 &
 SERVER_PID=$!
 
 # 保存 PID

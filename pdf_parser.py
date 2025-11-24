@@ -117,13 +117,9 @@ class PDFParser(BaseParser):
                         logger.warning(f"读取图像失败: {img_path}, 错误: {e}")
                         continue
 
-                # 异步并发 OCR
+                # 异步并发 OCR（并发参数从环境变量读取）
                 logger.info(f"开始异步并发 OCR，共 {len(images_data)} 个图像")
-                ocr_results_list = await self.process_images_async(
-                    images_data,
-                    max_concurrent=10,
-                    timeout_per_image=180.0  # 单个图像超时 180 秒（首次请求包含模型加载）
-                )
+                ocr_results_list = await self.process_images_async(images_data)
 
                 # 构建结果映射
                 for result_index, ocr_text in ocr_results_list:
