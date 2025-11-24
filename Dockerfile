@@ -43,5 +43,7 @@ RUN uv run python -c "from ocr_engine import get_ocr_engine; get_ocr_engine()" |
 # 暴露端口
 EXPOSE 50051
 
+ENV PYTHONPATH=/app
+
 # 启动 gRPC 服务（在 parsers/ 目录内使用 -m 模式）
 CMD ["uv", "run", "python", "-m", "parsers.grpc_service.server"]
