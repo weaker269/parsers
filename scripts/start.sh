@@ -19,6 +19,7 @@ PARENT_DIR="$(cd "${PROJECT_ROOT}/.." && pwd)"
 PID_FILE="${PROJECT_ROOT}/logs/server.pid"
 LOG_FILE="${PROJECT_ROOT}/logs/run.out"
 LOCK_FILE="${PROJECT_ROOT}/logs/server.lock"
+ENV_FILE="${PROJECT_ROOT}/.env"
 
 # 确保日志目录存在
 mkdir -p "${PROJECT_ROOT}/logs"
@@ -45,12 +46,22 @@ if ! mkdir "${LOCK_FILE}" 2>/dev/null; then
 fi
 trap "rmdir ${LOCK_FILE} 2>/dev/null || true" EXIT
 
+# 读取 .env（如果存在），以便使用用户配置覆盖默认值
+if [ -f "${ENV_FILE}" ]; then
+    echo -e "${GREEN}📦 加载环境变量: ${ENV_FILE}${NC}"
+    set -a
+    # shellcheck disable=SC1090
+    source "${ENV_FILE}"
+    set +a
+fi
+
 # 环境变量配置
-export PARSER_GRPC_PORT="${PARSER_GRPC_PORT:-50051}"
-export PARSER_GRPC_MAX_WORKERS="${PARSER_GRPC_MAX_WORKERS:-10}"
-export PARSER_GRPC_PRELOAD_OCR="${PARSER_GRPC_PRELOAD_OCR:-true}"
-export PARSER_LOG_DIR="${PROJECT_ROOT}/logs"
-export PARSER_LOG_LEVEL="${PARSER_LOG_LEVEL:-INFO}"
+: "${PARSER_GRPC_PORT:=50051}"
+: "${PARSER_GRPC_MAX_WORKERS:=10}"
+: "${PARSER_GRPC_PRELOAD_OCR:=true}"
+: "${PARSER_LOG_DIR:=${PROJECT_ROOT}/logs}"
+: "${PARSER_LOG_LEVEL:=INFO}"
+export PARSER_GRPC_PORT PARSER_GRPC_MAX_WORKERS PARSER_GRPC_PRELOAD_OCR PARSER_LOG_DIR PARSER_LOG_LEVEL
 
 # 设置 PYTHONPATH 指向父目录，让 Python 可以找到 parsers 包
 export PYTHONPATH="${PARENT_DIR}:${PYTHONPATH}"
